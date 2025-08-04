@@ -7,7 +7,7 @@
       state: latest
       update_cache: true
 
-  - name: Obtenir ou renouveler le certificat pour front & API
+  - name: Obtenir ou renouveler le certificat pour front & API & Minio & Grafana
     become: true
     shell: |
       /usr/bin/certbot certonly --nginx \
