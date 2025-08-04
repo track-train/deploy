@@ -65,9 +65,9 @@ services:
     depends_on:
       - api
     ports:
-      - "{{ front_external_port }}:5173"
+      - "{{ front_external_port }}:80"
     environment:
-      API_URL: "${API_URL}"
+      VITE_APP_API_URL: "${VITE_APP_API_URL}"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
