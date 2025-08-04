@@ -1,0 +1,115 @@
+volumes:
+  {{ db_volume }}:
+  {{ minio_volume }}:
+  {{ grafana_volume }}:
+  {{ prometheus_volume }}:
+
+
+services:
+
+  postgres:
+    image: postgres
+    container_name: {{ postgres_container }}
+    restart: always
+    ports:
+      - "{{ postgres_external_port }}:5432"
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+    volumes:
+      - {{ db_volume }}:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio:latest
+    container_name: {{ minio_container }}
+    restart: unless-stopped
+    ports:
+      - "{{ minio_api_port }}:9000"
+      - "{{ minio_console_port }}:9001"
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+      MINIO_BROWSER_REDIRECT_URL: "${MINIO_BROWSER_REDIRECT_URL}"
+    command: server /data --console-address ":9001"
+    volumes:
+      - {{ minio_volume }}:/data
+
+  api:
+    image: {{ api_image }}
+    container_name: {{ api_container }}
+    restart: unless-stopped
+    ports:
+      - "{{ api_external_port }}:8000"
+    depends_on:
+      - postgres
+      - minio
+    environment:
+      ENV: "${APP_ENV}"
+      SECRET_KEY: "${SECRET_KEY}"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "${ACCESS_TOKEN_EXPIRE_MINUTES}"
+      DATABASE_URL: "${DATABASE_URL}"
+      MINIO_ACCESS_KEY: "${MINIO_ROOT_USER}"
+      MINIO_SECRET_KEY: "${MINIO_ROOT_PASSWORD}"
+      MINIO_ENDPOINT: "${MINIO_ENDPOINT}"
+      MINIO_PUBLIC_URL: "${MINIO_PUBLIC_URL}"
+      MINIO_BUCKET_PP: "${MINIO_BUCKET_PP}"
+      MINIO_BUCKET_USERS: "${MINIO_BUCKET_USERS}"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  front:
+    image: {{ front_image }}
+    container_name: {{ front_container }}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "{{ front_external_port }}:5173"
+    environment:
+      API_URL: "${API_URL}"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: {{ watchtower_container }}
+    restart: unless-stopped
+    command:
+      - --interval
+      - "${WATCHTOWER_INTERVAL:-300}"
+      - --label-enable
+      - --cleanup
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  grafana:
+    image: grafana/grafana
+    container_name: {{ grafana_container }}
+    restart: unless-stopped
+    ports:
+      - "{{ grafana_external_port }}:4000"
+    environment:
+      GF_SERVER_HTTP_PORT: 4000
+      GF_SECURITY_ADMIN_USER: "${GF_SECURITY_ADMIN_USER}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GF_SECURITY_ADMIN_PASSWORD}"
+      GF_SERVER_ROOT_URL: "${GF_SERVER_ROOT_URL}"
+    volumes:
+      - {{ grafana_volume }}:/var/lib/grafana
+
+  prometheus:
+    image: prom/prometheus
+    container_name: {{ prometheus_container }}
+    restart: unless-stopped
+    ports:
+      - "{{ prometheus_external_port }}:9090"
+    volumes:
+      - {{ prometheus_volume }}:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'

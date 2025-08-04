@@ -1,0 +1,98 @@
+{% macro ssl(domain) -%}
+ssl_certificate     {{ ssl_live_path }}/{{ domain }}/fullchain.pem;
+ssl_certificate_key {{ ssl_live_path }}/{{ domain }}/privkey.pem;
+{%- endmacro %}
+
+#— REDIRECTION HTTP → HTTPS pour tous les domaines
+server {
+  listen 80;
+  server_name {{ domain_front }} {{ domain_api }} {{ domain_minio }} {{ domain_grafana }};
+
+  return 301 https://$host$request_uri;
+}
+
+#— FRONTEND HTTPS
+server {
+  listen 443 ssl http2;
+  server_name {{ domain_front }};
+
+  {{ ssl(domain_front) }}
+  include {{ letsencrypt_conf }};
+  ssl_dhparam {{ letsencrypt_dhparam }};
+
+  location / {
+    proxy_pass http://127.0.0.1:{{ front_external_port }};
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+
+#— API HTTPS
+server {
+  listen 443 ssl http2;
+  server_name {{ domain_api }};
+
+  {{ ssl(domain_front) }}
+  include {{ letsencrypt_conf }};
+  ssl_dhparam {{ letsencrypt_dhparam }};
+
+  location / {
+    proxy_pass http://127.0.0.1:{{ api_external_port }};
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+
+#— MINIO HTTPS (API + Console)
+server {
+  listen 443 ssl http2;
+  server_name {{ domain_minio }};
+
+  {{ ssl(domain_front) }}
+  include {{ letsencrypt_conf }};
+  ssl_dhparam {{ letsencrypt_dhparam }};
+
+  # Console MinIO (interface web)
+  location /console/ {
+    rewrite ^/console/(.*) /$1 break;
+    proxy_pass http://127.0.0.1:{{ minio_console_port }}/;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+
+  # API MinIO (stockage de fichiers)
+  location / {
+    proxy_pass http://127.0.0.1:{{ minio_api_port }};
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+
+#— GRAFANA HTTPS
+server {
+  listen 443 ssl http2;
+  server_name {{ domain_grafana }};
+
+  {{ ssl(domain_front) }}
+  include {{ letsencrypt_conf }};
+  ssl_dhparam {{ letsencrypt_dhparam }};
+
+  location / {
+    proxy_pass http://127.0.0.1:{{ grafana_external_port }};
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
