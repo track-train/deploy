@@ -1,0 +1,9 @@
+---
+- name: 🚀 Test rôle Docker
+  hosts: all
+  become: true
+  roles:
+    - { role: docker,    tags: docker }
+    - { role: certbot,   tags: certbot }
+    - { role: nginx,     tags: nginx }
+    - { role: deploy,    tags: deploy}

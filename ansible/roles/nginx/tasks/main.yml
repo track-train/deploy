@@ -1,0 +1,55 @@
+---
+# roles/nginx/tasks/main.yml
+
+# - name: DEBUG – Variables chargées pour {{ inventory_hostname }}
+#   debug:
+#     var: hostvars[inventory_hostname]
+#   tags: nginx
+
+- name: Installer Nginx
+  apt:
+    name: nginx
+    state: latest
+    update_cache: true
+  when: not ansible_check_mode
+  tags: nginx
+
+- name: ▶️ Démarrer et activer Nginx
+  service:
+    name: nginx
+    state: started
+    enabled: true
+  tags: nginx
+
+- name: Déployer la conf Nginx
+  template:
+    src: nginx.conf.j2
+    dest: "{{ nginx_site_conf }}"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload Nginx
+  tags: nginx
+
+- name: Activer le site Nginx
+  file:
+    src: "{{ nginx_site_conf }}"
+    dest: "{{ nginx_enabled_conf }}"
+    state: link
+  notify: Reload Nginx
+  tags: nginx
+  when: not ansible_check_mode
+
+
+- name: Tester la configuration Nginx
+  command: nginx -t
+  register: nginx_test
+  changed_when: false
+  failed_when: nginx_test.rc not in [0,1]
+  tags: nginx
+  when: not ansible_check_mode
+
+- name: Afficher le résultat du test Nginx
+  debug:
+    var: nginx_test.stdout
+  tags: nginx

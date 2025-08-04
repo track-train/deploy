@@ -1,0 +1,31 @@
+---
+  - name: Installer Certbot et plugin Nginx
+    apt:
+      name:
+        - certbot
+        - python3-certbot-nginx
+      state: latest
+      update_cache: true
+
+  - name: Obtenir ou renouveler le certificat pour front & API
+    become: true
+    shell: |
+      /usr/bin/certbot certonly --nginx \
+        -d "{{ domain_front }}" \
+        -d "{{ domain_api }}" \
+        -d "{{ domain_minio }}" \
+        -d "{{ domain_grafana }}" \
+        --email "{{ certbot_email }}" \
+        --agree-tos \
+        --non-interactive
+    args:
+      creates: "{{ ssl_live_path }}/{{ domain_front }}/fullchain.pem"
+
+
+  - name: ⏲️ Planifier le renouvellement automatique de Certbot
+    cron:
+      name: "Renew Let's Encrypt certificates"
+      minute: "0"
+      hour:   "3"
+      user:   root
+      job:    "certbot renew --quiet && systemctl reload nginx"

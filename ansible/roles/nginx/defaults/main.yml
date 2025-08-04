@@ -1,0 +1,13 @@
+---
+# roles/nginx/defaults/main.yml
+
+# Chemin vers les certificats Let’s Encrypt
+ssl_live_path: /etc/letsencrypt/live
+
+# TLS settings
+ssl_protocols: "TLSv1.2 TLSv1.3"
+ssl_ciphers:   "HIGH:!aNULL:!MD5"
+
+# Emplacements de la conf
+nginx_site_conf:     "/etc/nginx/sites-available/{{ domain_front }}.conf"
+nginx_enabled_conf:  "/etc/nginx/sites-enabled/{{ domain_front }}.conf"

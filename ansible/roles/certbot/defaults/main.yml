@@ -1,0 +1,14 @@
+---
+# roles/certbot/defaults/main.yml
+
+# Chemin de la clé de compte ACME
+account_key_path: /etc/letsencrypt/account.key
+
+# Point d’entrée ACME de Let's Encrypt (prod)
+acme_directory: https://acme-v02.api.letsencrypt.org/directory
+
+domains:
+  - "{{ domain_front }}"
+  - "{{ domain_api }}"
+  - "{{ domain_minio }}"
+  - "{{ domain_grafana }}"

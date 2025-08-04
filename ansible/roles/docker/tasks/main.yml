@@ -1,0 +1,13 @@
+- name: 📦 Installer Docker CE & plugins officiels
+  apt:
+    name: "{{ docker_packages }}"
+    state: latest
+    update_cache: true
+  when: not ansible_check_mode
+  tags: docker
+
+- name: ▶️ Démarrer et activer le service Docker
+  service:
+    name: docker
+    state: started
+    enabled: true
