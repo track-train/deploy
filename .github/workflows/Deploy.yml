@@ -1,0 +1,80 @@
+name: Ansible Deployment
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - develop
+
+env:
+  ANSIBLE_HOST_KEY_CHECKING: "False"
+
+jobs:
+  deploy-prod:
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }} 
+
+      - name: Deploy to PRODUCTION
+        working-directory: ansible
+        run: |
+          echo "${{ secrets.VAULT_PASSWORD_PROD }}" > vault_pass.txt
+          ansible-playbook -i hosts playbooks/site.yml \
+            --limit=prod \
+            --vault-password-file vault_pass.txt \
+            --diff
+          rm vault_pass.txt
+
+  deploy-preprod:
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'develop'
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to PRE-PRODUCTION
+        working-directory: ansible
+        run: |
+          echo "${{ secrets.VAULT_PASSWORD_PRE_PROD }}" > vault_pass.txt
+          ansible-playbook -i hosts playbooks/site.yml \
+            --limit=pre_prod \
+            --vault-password-file vault_pass.txt \
+            --diff
+          rm vault_pass.txt
