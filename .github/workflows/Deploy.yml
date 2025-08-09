@@ -38,7 +38,7 @@ jobs:
       - name: Deploy to PRODUCTION
         working-directory: ansible
         run: |
-          echo "${{ secrets.VAULT_PASSWORD_PROD }}" > vault_pass.txt
+          echo '${{ secrets.VAULT_PASSWORD_PROD }}' > vault_pass.txt
           ansible-playbook -i hosts playbooks/site.yml \
             --limit=prod \
             --vault-password-file vault_pass.txt
@@ -49,10 +49,12 @@ jobs:
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'develop'
     runs-on: ubuntu-latest
+    environment: staging
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
 
       - name: Setup Python
         uses: actions/setup-python@v4
