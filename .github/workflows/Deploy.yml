@@ -49,7 +49,6 @@ jobs:
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'develop'
     runs-on: ubuntu-latest
-    environment: staging
 
     steps:
       - name: Checkout repository
