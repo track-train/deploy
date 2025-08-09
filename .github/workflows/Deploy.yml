@@ -41,8 +41,7 @@ jobs:
           echo "${{ secrets.VAULT_PASSWORD_PROD }}" > vault_pass.txt
           ansible-playbook -i hosts playbooks/site.yml \
             --limit=prod \
-            --vault-password-file vault_pass.txt \
-            --diff
+            --vault-password-file vault_pass.txt
           rm vault_pass.txt
 
   deploy-preprod:
@@ -75,6 +74,5 @@ jobs:
           echo "${{ secrets.VAULT_PASSWORD_PRE_PROD }}" > vault_pass.txt
           ansible-playbook -i hosts playbooks/site.yml \
             --limit=pre_prod \
-            --vault-password-file vault_pass.txt \
-            --diff
+            --vault-password-file vault_pass.txt
           rm vault_pass.txt
