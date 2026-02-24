@@ -1,4 +1,12 @@
 ---
+  - name: Créer le dossier pour les challenges Let's Encrypt
+    file:
+      path: /var/www/html/.well-known/acme-challenge
+      state: directory
+      owner: www-data
+      group: www-data
+      mode: '0755'
+      
   - name: Installer Certbot et plugin Nginx
     apt:
       name:
