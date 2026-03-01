@@ -1,79 +1,53 @@
-name: Ansible Deployment
+name: 🚀 Ansible Deploy
 
 on:
-  pull_request:
-    types: [closed]
-    branches:
-      - main
-      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment target'
+        required: true
+        default: 'pre_prod'
+        type: choice
+        options:
+          - pre_prod
+          - prod
+      dry_run:
+        description: 'Check mode (dry-run)'
+        required: false
+        default: false
+        type: boolean
 
 env:
   ANSIBLE_HOST_KEY_CHECKING: "False"
 
 jobs:
-  deploy-prod:
-    if: |
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'main'
+  deploy:
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.environment == 'prod' && 'production' || 'staging' }}
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Ansible
+      - name: 📦 Install Ansible
         run: pip install ansible
 
-      - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }} 
-
-      - name: Deploy to PRODUCTION
-        working-directory: ansible
-        run: |
-          echo '${{ secrets.VAULT_PASSWORD_PROD }}' > vault_pass.txt
-          ansible-playbook -i hosts playbooks/site.yml \
-            --limit=prod \
-            --vault-password-file vault_pass.txt
-          rm vault_pass.txt
-
-  deploy-preprod:
-    if: |
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'develop'
-    runs-on: ubuntu-latest
-    environment: staging
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install Ansible
-        run: pip install ansible
-
-      - name: Load SSH key
+      - name: 🔑 Load SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to PRE-PRODUCTION
+      - name: 🚀 Deploy to ${{ inputs.environment == 'prod' && 'PRODUCTION' || 'PRE-PRODUCTION' }}
         working-directory: ansible
         run: |
-          echo '${{ secrets.VAULT_PASSWORD_PRE_PROD }}' > vault_pass.txt
+          echo '${{ inputs.environment == 'prod' && secrets.VAULT_PASSWORD_PROD || secrets.VAULT_PASSWORD_PRE_PROD }}' > vault_pass.txt
           ansible-playbook -i hosts playbooks/site.yml \
-            --limit=pre_prod \
-            --vault-password-file vault_pass.txt
+            --limit=${{ inputs.environment }} \
+            --vault-password-file vault_pass.txt \
+            ${{ inputs.dry_run == true && '--check' || '' }}
           rm vault_pass.txt
