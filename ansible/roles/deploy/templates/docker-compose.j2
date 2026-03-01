@@ -51,7 +51,7 @@ services:
       - "traefik.http.routers.minio-console.service=minio-console"
       - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
       # API MinIO
-      - "traefik.http.routers.minio-api.rule=Host(`{{ domain_minio }}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.minio-api.rule=Host(`{{ domain_minio_api }}`)"
       - "traefik.http.routers.minio-api.entrypoints=websecure"
       - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.minio-api.service=minio-api"
