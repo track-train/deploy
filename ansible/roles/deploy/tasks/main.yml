@@ -19,11 +19,11 @@
       dest: "{{ project_root }}/{{ inventory_hostname }}/.env"
       mode: '0644'
 
-  - name: Génération du fichier prometheus.yml
-    ansible.builtin.template:
-      src: prometheus.yml.j2
-      dest: "{{ project_root }}/{{ inventory_hostname }}/prometheus.yml"
-      mode: '0644'
+  # - name: Génération du fichier prometheus.yml
+  #   ansible.builtin.template:
+  #     src: prometheus.yml.j2
+  #     dest: "{{ project_root }}/{{ inventory_hostname }}/prometheus.yml"
+  #     mode: '0644'
   
   - name: Vérifier si des services Docker Compose tournent
     command:
