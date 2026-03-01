@@ -4,6 +4,12 @@ volumes:
   {{ grafana_volume }}:
   {{ prometheus_volume }}:
 
+networks:
+  {{ docker_network_name }}:
+    external: true
+  internal_network:
+    name: trackntrain_internal_preprod
+    driver: bridge 
 
 services:
 
@@ -19,6 +25,8 @@ services:
       POSTGRES_DB: "${POSTGRES_DB}"
     volumes:
       - {{ db_volume }}:/var/lib/postgresql/data
+    networks:
+      - internal_network 
 
   minio:
     image: minio/minio:latest
@@ -80,6 +88,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - {{ docker_network_name }}
+      - internal_network 
 
   front:
     image: {{ front_image }}
@@ -100,7 +109,3 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - {{ docker_network_name }}
-
-networks:
-  {{ docker_network_name }}:
-    external: true
